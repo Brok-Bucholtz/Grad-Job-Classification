@@ -54,6 +54,7 @@ def run():
     indeed_params = {
         'q': args.JobTitle,
         'limit': max_indeed_limit,
+        'latlong': 1,
         'userip': '1.2.3.4',
         'useragent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2)'
     }
