@@ -46,8 +46,8 @@ def run():
     config = configparser.ConfigParser()
     config.read('config.ini')
     arg_parser = argparse.ArgumentParser()
-    indeed_client = IndeedClient(publisher=config['DEFAULT']['IndeedPublisherNumber'])
-    database = MongoClient(config['DEFAULT']['DatabaseHost'], int(config['DEFAULT']['DatabasePort']))[config['DEFAULT']['DatabaseName']]
+    indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
+    database = MongoClient(config['DATABASE']['Host'], int(config['DATABASE']['Port']))[config['DATABASE']['Name']]
 
     arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
     arg_parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
