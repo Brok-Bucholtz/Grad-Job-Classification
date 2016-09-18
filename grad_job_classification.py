@@ -11,6 +11,23 @@ from indeed import IndeedClient
 from pymongo import MongoClient
 
 
+def _update_array_fields(model, current_values, new_field_values):
+    """
+    Update all array fields if they don't contain the new values
+    :param model: DB Base Model
+    :param current_values: Dictionary of current values for model
+    :param new_field_values: Dictionary of new values that should be in arrays
+    :return:
+    """
+    update_array_fields = {}
+    for field, value in new_field_values.items():
+        if value not in current_values[field]:
+            update_array_fields[field] = value
+
+    if update_array_fields:
+        model.update_one({'_id': current_values['_id']}, {'$push': update_array_fields})
+
+
 def job_degree_strings(job):
     """
     Get strings from the job page that are related to degree requirements
@@ -64,19 +81,28 @@ def run():
 
     for location in args.Locations:
         result_start = 0
-        newest_job = database.jobs.find_one({'search_location': location}, sort=[('date', pymongo.DESCENDING)])
+        newest_job = database.jobs.find_one({'search_title': args.JobTitle, 'search_location': location}, sort=[('date', pymongo.DESCENDING)])
         indeed_response = indeed_client.search(**indeed_params, l=location, start=result_start)
         jobs = indeed_response['results']
         total_jobs = indeed_response['totalResults']
 
         while result_start < total_jobs and\
                 (not newest_job or newest_job['date'] < parser.parse(jobs[0]['date']).timestamp()):
-            new_jobs = [job for job in jobs if not database.jobs.find({'jobkey': job['jobkey']}).count()]
-            if new_jobs:
-                for job in new_jobs:
-                    job['search_location'] = location
+            new_jobs = []
+            for job in jobs:
+                found_job = database.jobs.find_one({'jobkey': job['jobkey']})
+                if found_job:
+                    _update_array_fields(
+                        database.jobs,
+                        found_job,
+                        {'search_location': location, 'search_title': args.JobTitle})
+                else:
+                    job['search_location'] = [location]
+                    job['search_title'] = [args.JobTitle]
                     job['degree_strings'] = job_degree_strings(job)
                     job['date'] = parser.parse(job['date']).timestamp()
+                    new_jobs.append(job)
+            if new_jobs:
                 database.jobs.insert_many(new_jobs)
 
             result_start += indeed_params['limit']
@@ -84,16 +110,16 @@ def run():
 
     # Count the degree types found
     city_degree_counts = {}
-    for job in database.jobs.find():
-        city = job['search_location']
-        if city not in city_degree_counts:
-            city_degree_counts[city] = {
-                'undergrad': 0,
-                'ms': 0,
-                'phd': 0}
-        for degree, strings in job['degree_strings'].items():
-            if strings:
-                city_degree_counts[city][degree] += 1
+    for job in database.jobs.find({'search_title': args.JobTitle}):
+        for city in job['search_location']:
+            if city not in city_degree_counts:
+                city_degree_counts[city] = {
+                    'undergrad': 0,
+                    'ms': 0,
+                    'phd': 0}
+            for degree, strings in job['degree_strings'].items():
+                if strings:
+                    city_degree_counts[city][degree] += 1
 
     for city, degree_count in city_degree_counts.items():
         print('{} found {} undergrads, {} ms, and {} phd matches'.format(
