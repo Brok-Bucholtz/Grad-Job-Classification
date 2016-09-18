@@ -83,8 +83,8 @@ def run():
                 'ms': 0,
                 'phd': 0}
         for degree, strings in job['degree_strings'].items():
-           if strings:
-               city_degree_counts[city][degree] += 1
+            if strings:
+                city_degree_counts[city][degree] += 1
 
     for city, degree_count in city_degree_counts.items():
         print('{} found {} undergrads, {} ms, and {} phd matches'.format(
