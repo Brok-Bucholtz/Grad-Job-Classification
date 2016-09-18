@@ -5,6 +5,7 @@ import requests
 
 from bs4 import BeautifulSoup
 from indeed import IndeedClient
+from pymongo import MongoClient
 
 
 def job_degree_strings(job):
@@ -42,7 +43,8 @@ def run():
     config = configparser.ConfigParser()
     config.read('config.ini')
     parser = argparse.ArgumentParser()
-    client = IndeedClient(publisher=config['DEFAULT']['IndeedPublisherNumber'])
+    indeed_client = IndeedClient(publisher=config['DEFAULT']['IndeedPublisherNumber'])
+    database = MongoClient(config['DEFAULT']['DatabaseHost'], int(config['DEFAULT']['DatabasePort']))[config['DEFAULT']['DatabaseName']]
 
     parser.add_argument('JobTitle', help='Search for specific job title', type=str)
     parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
@@ -61,25 +63,34 @@ def run():
         indeed_params['limit'] = args.limit
 
     for location in args.Locations:
-        degree_counts = {
-            'undergrad': 0,
-            'ms': 0,
-            'phd': 0
-        }
-
         for result_start in range(0, args.limit, indeed_params['limit']):
-            jobs = client.search(**indeed_params, l=location, start=result_start)['results']
-            for job in jobs:
-                # Count the degree types found
-                for degree, strings in job_degree_strings(job).items():
-                    if strings:
-                        degree_counts[degree] += 1
+            jobs = indeed_client.search(**indeed_params, l=location, start=result_start)['results']
+            new_jobs = [job for job in jobs if not database.jobs.find({'jobkey': job['jobkey']}).count()]
+            if new_jobs:
+                for job in new_jobs:
+                    job['search_location'] = location
+                    job['degree_strings'] = job_degree_strings(job)
+                database.jobs.insert_many(new_jobs)
 
+    # Count the degree types found
+    city_degree_counts = {}
+    for job in database.jobs.find():
+        city = job['search_location']
+        if city not in city_degree_counts:
+            city_degree_counts[city] = {
+                'undergrad': 0,
+                'ms': 0,
+                'phd': 0}
+        for degree, strings in job['degree_strings'].items():
+           if strings:
+               city_degree_counts[city][degree] += 1
+
+    for city, degree_count in city_degree_counts.items():
         print('{} found {} undergrads, {} ms, and {} phd matches'.format(
-            location,
-            degree_counts['undergrad'],
-            degree_counts['ms'],
-            degree_counts['phd']))
+           city,
+           degree_count['undergrad'],
+           degree_count['ms'],
+           degree_count['phd']))
 
 
 if __name__ == '__main__':
