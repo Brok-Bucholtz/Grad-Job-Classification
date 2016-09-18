@@ -1,6 +1,9 @@
 import argparse
 import configparser
 import re
+from dateutil import parser
+
+import pymongo
 import requests
 
 from bs4 import BeautifulSoup
@@ -42,36 +45,42 @@ def run():
     max_indeed_limit = 25
     config = configparser.ConfigParser()
     config.read('config.ini')
-    parser = argparse.ArgumentParser()
+    arg_parser = argparse.ArgumentParser()
     indeed_client = IndeedClient(publisher=config['DEFAULT']['IndeedPublisherNumber'])
     database = MongoClient(config['DEFAULT']['DatabaseHost'], int(config['DEFAULT']['DatabasePort']))[config['DEFAULT']['DatabaseName']]
 
-    parser.add_argument('JobTitle', help='Search for specific job title', type=str)
-    parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
-    parser.add_argument('--limit', help='Maximum jobs to search per location', type=int, default=100)
-    args = parser.parse_args()
+    arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
+    arg_parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
+    args = arg_parser.parse_args()
 
     indeed_params = {
         'q': args.JobTitle,
         'limit': max_indeed_limit,
         'latlong': 1,
+        'sort': 'date',
         'userip': '1.2.3.4',
         'useragent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2)'
     }
 
-    # Make sure the number of jobs requested is bellow the limit
-    if args.limit < indeed_params['limit']:
-        indeed_params['limit'] = args.limit
-
     for location in args.Locations:
-        for result_start in range(0, args.limit, indeed_params['limit']):
-            jobs = indeed_client.search(**indeed_params, l=location, start=result_start)['results']
+        result_start = 0
+        newest_job = database.jobs.find_one({'search_location': location}, sort=[('date', pymongo.DESCENDING)])
+        indeed_response = indeed_client.search(**indeed_params, l=location, start=result_start)
+        jobs = indeed_response['results']
+        total_jobs = indeed_response['totalResults']
+
+        while result_start < total_jobs and\
+                (not newest_job or newest_job['date'] < parser.parse(jobs[0]['date']).timestamp()):
             new_jobs = [job for job in jobs if not database.jobs.find({'jobkey': job['jobkey']}).count()]
             if new_jobs:
                 for job in new_jobs:
                     job['search_location'] = location
                     job['degree_strings'] = job_degree_strings(job)
+                    job['date'] = parser.parse(job['date']).timestamp()
                 database.jobs.insert_many(new_jobs)
+
+            result_start += indeed_params['limit']
+            jobs = indeed_client.search(**indeed_params, l=location, start=result_start)['results']
 
     # Count the degree types found
     city_degree_counts = {}
