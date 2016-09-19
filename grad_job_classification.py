@@ -192,7 +192,7 @@ def run():
         logger.setLevel(logging.INFO)
 
     if args.TaskType == 'analyse':
-        logger.info('Analysing jobs data...')
+        logger.info('Analysing job data...')
         analyse(database, args.JobTitle)
     elif args.TaskType == 'scrape':
         logger.info('Scraping indeed...')
