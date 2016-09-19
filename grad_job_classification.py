@@ -28,7 +28,7 @@ def _update_array_fields(model, current_values, new_field_values):
         model.update_one({'_id': current_values['_id']}, {'$push': update_array_fields})
 
 
-def job_degree_strings(job):
+def _job_degree_strings(html):
     """
     Get strings from the job page that are related to degree requirements
     :param job: Indeed job
@@ -40,8 +40,7 @@ def job_degree_strings(job):
         'ms': [],
         'phd': []
     }
-    page = requests.get(job['url'])
-    soup = BeautifulSoup(page.content, 'html.parser')
+    soup = BeautifulSoup(html, 'html.parser')
 
     # Remove css and js from search
     for script in soup(["script", "style"]):
@@ -99,7 +98,7 @@ def run():
                 else:
                     job['search_location'] = [location]
                     job['search_title'] = [args.JobTitle]
-                    job['degree_strings'] = job_degree_strings(job)
+                    job['html_posting'] = requests.get(job['url']).content
                     job['date'] = parser.parse(job['date']).timestamp()
                     new_jobs.append(job)
             if new_jobs:
@@ -117,7 +116,7 @@ def run():
                     'undergrad': 0,
                     'ms': 0,
                     'phd': 0}
-            for degree, strings in job['degree_strings'].items():
+            for degree, strings in _job_degree_strings(job['html_posting']).items():
                 if strings:
                     city_degree_counts[city][degree] += 1
 
