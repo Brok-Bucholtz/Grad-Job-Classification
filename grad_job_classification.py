@@ -28,20 +28,18 @@ def _update_array_fields(model, current_values, new_field_values):
         model.update_one({'_id': current_values['_id']}, {'$push': update_array_fields})
 
 
-def run():
+def scrape_indeed(database, indeed_client, job_title, locations):
+    """
+    Scrape job data from indeed and save it to the database
+    :param database: Database to save the indeed data
+    :param indeed_client: Indeed API client
+    :param job_title: Job title to search for
+    :param locations: Job locations to search for
+    :return: 
+    """
     max_indeed_limit = 25
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    arg_parser = argparse.ArgumentParser()
-    indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
-    database = MongoClient(config['DATABASE']['Host'], int(config['DATABASE']['Port']))[config['DATABASE']['Name']]
-
-    arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
-    arg_parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
-    args = arg_parser.parse_args()
-
     indeed_params = {
-        'q': args.JobTitle,
+        'q': job_title,
         'limit': max_indeed_limit,
         'latlong': 1,
         'sort': 'date',
@@ -49,9 +47,10 @@ def run():
         'useragent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2)'
     }
 
-    for location in args.Locations:
+    for location in locations:
         result_start = 0
-        newest_job = database.jobs.find_one({'search_title': args.JobTitle, 'search_location': location}, sort=[('date', pymongo.DESCENDING)])
+        newest_job = database.jobs.find_one({'search_title': job_title, 'search_location': location},
+                                            sort=[('date', pymongo.DESCENDING)])
         indeed_response = indeed_client.search(**indeed_params, l=location, start=result_start)
         jobs = indeed_response['results']
         total_jobs = indeed_response['totalResults']
@@ -65,10 +64,10 @@ def run():
                     _update_array_fields(
                         database.jobs,
                         found_job,
-                        {'search_location': location, 'search_title': args.JobTitle})
+                        {'search_location': location, 'search_title': job_title})
                 else:
                     job['search_location'] = [location]
-                    job['search_title'] = [args.JobTitle]
+                    job['search_title'] = [job_title]
                     job['html_posting'] = requests.get(job['url']).content
                     job['date'] = parser.parse(job['date']).timestamp()
                     new_jobs.append(job)
@@ -77,6 +76,20 @@ def run():
 
             result_start += indeed_params['limit']
             jobs = indeed_client.search(**indeed_params, l=location, start=result_start)['results']
+
+
+def run():
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    arg_parser = argparse.ArgumentParser()
+    indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
+    database = MongoClient(config['DATABASE']['Host'], int(config['DATABASE']['Port']))[config['DATABASE']['Name']]
+
+    arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
+    arg_parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
+    args = arg_parser.parse_args()
+
+    scrape_indeed(database, indeed_client, args.JobTitle, args.Locations)
 
     # Count the degree types found
     city_degree_counts = {}
