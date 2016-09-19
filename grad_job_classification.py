@@ -1,6 +1,7 @@
 import argparse
 import configparser
 import csv
+import logging
 from os import path, makedirs
 
 import ipgetter
@@ -63,16 +64,18 @@ def _scrape_cities():
     return cities
 
 
-def scrape_indeed(database, indeed_client, job_title, locations):
+def scrape_indeed(database, indeed_client, logger, job_title, locations):
     """
     Scrape job data from indeed and save it to the database
     :param database: Database to save the indeed data
     :param indeed_client: Indeed API client
+    :param logger: Logger to log activity
     :param job_title: Job title to search for
     :param locations: Job locations to search for
     :return: 
     """
     max_indeed_limit = 25
+    sample_max_city_name_length = 35
     indeed_params = {
         'q': job_title,
         'limit': max_indeed_limit,
@@ -107,6 +110,8 @@ def scrape_indeed(database, indeed_client, job_title, locations):
                     job['date'] = parser.parse(job['date']).timestamp()
                     new_jobs.append(job)
             if new_jobs:
+                debug_log_string = 'Scraped location {:<' + str(sample_max_city_name_length) + '} found {:>3} jobs.'
+                logger.debug(debug_log_string.format(location, len(new_jobs)))
                 database.jobs.insert_many(new_jobs)
 
             result_start += indeed_params['limit']
@@ -162,6 +167,7 @@ def analyse(database, job_title):
 
 
 def run():
+    app_name = 'grad_job_classification'
     config = configparser.ConfigParser()
     config.read('config.ini')
     arg_parser = argparse.ArgumentParser()
@@ -169,14 +175,30 @@ def run():
 
     arg_parser.add_argument('TaskType', help='Run the specified task type', choices=['analyse', 'scrape'], type=str)
     arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
+    arg_parser.add_argument('--verbose', help='Verbose Mode', action='store_true')
     args = arg_parser.parse_args()
 
+    # Setup logging
+    logger = logging.getLogger(app_name)
+    log_format = logging.Formatter(
+        '%(asctime)s [%(process)d][%(levelname)-8s-{:>7}]  --  %(message)s'.format(args.TaskType))
+    console = logging.StreamHandler()
+    console.setFormatter(log_format)
+    logger.addHandler(console)
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
     if args.TaskType == 'analyse':
+        logger.info('Analysing jobs data...')
         analyse(database, args.JobTitle)
     elif args.TaskType == 'scrape':
+        logger.info('Scraping indeed...')
         indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
         cities = _scrape_cities()
-        scrape_indeed(database, indeed_client, args.JobTitle, cities)
+        scrape_indeed(database, indeed_client, logger, args.JobTitle, cities)
 
 
 if __name__ == '__main__':
