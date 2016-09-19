@@ -1,14 +1,14 @@
 import argparse
 import configparser
-import re
 from dateutil import parser
 
 import pymongo
 import requests
 
-from bs4 import BeautifulSoup
 from indeed import IndeedClient
 from pymongo import MongoClient
+
+from feature_extraction import job_degree_strings
 
 
 def _update_array_fields(model, current_values, new_field_values):
@@ -26,35 +26,6 @@ def _update_array_fields(model, current_values, new_field_values):
 
     if update_array_fields:
         model.update_one({'_id': current_values['_id']}, {'$push': update_array_fields})
-
-
-def _job_degree_strings(html):
-    """
-    Get strings from the job page that are related to degree requirements
-    :param job: Indeed job
-    :return: Dictionary list of all found strings related to degree.
-    """
-
-    degree_strings = {
-        'undergrad': [],
-        'ms': [],
-        'phd': []
-    }
-    soup = BeautifulSoup(html, 'html.parser')
-
-    # Remove css and js from search
-    for script in soup(["script", "style"]):
-        script.extract()
-
-    # Get strings related to degree requierments
-    for element in soup(text=re.compile(r'\b[p]\.?[h]\.?[d]\.?\b', flags=re.IGNORECASE)):
-        degree_strings['phd'].append(element)
-    for element in soup(text=re.compile(r'\b[m]\.?[s]\.?\b', flags=re.IGNORECASE)):
-        degree_strings['ms'].append(element)
-    for element in soup(text=re.compile(r'\bdegree\b', flags=re.IGNORECASE)):
-        degree_strings['undergrad'].append(element)
-
-    return degree_strings
 
 
 def run():
@@ -116,7 +87,7 @@ def run():
                     'undergrad': 0,
                     'ms': 0,
                     'phd': 0}
-            for degree, strings in _job_degree_strings(job['html_posting']).items():
+            for degree, strings in job_degree_strings(job['html_posting']).items():
                 if strings:
                     city_degree_counts[city][degree] += 1
 
