@@ -90,19 +90,35 @@ def analyse(database, job_title):
         for city in job['search_location']:
             if city not in city_degree_counts:
                 city_degree_counts[city] = {
+                    'unknown': 0,
                     'undergrad': 0,
+                    'ms/phd': 0,
                     'ms': 0,
                     'phd': 0}
-            for degree, strings in job_degree_strings(job['html_posting']).items():
-                if strings:
-                    city_degree_counts[city][degree] += 1
+            degree_strings = job_degree_strings(job['html_posting'])
+            is_grad = degree_strings['ms'] or degree_strings['phd']
+            is_undergrad = degree_strings['undergrad'] and not is_grad
+
+            if is_undergrad:
+                city_degree_counts[city]['undergrad'] += 1
+            elif is_grad:
+                if degree_strings['ms'] and degree_strings['phd']:
+                    city_degree_counts[city]['ms/phd'] += 1
+                elif degree_strings['ms']:
+                    city_degree_counts[city]['ms'] += 1
+                else:
+                    city_degree_counts[city]['phd'] += 1
+            else:
+                city_degree_counts[city]['unknown'] += 1
 
     for city, degree_count in city_degree_counts.items():
-        print('{} found {} undergrads, {} ms, and {} phd matches'.format(
+        print('{} found {} undergrads, {} ms/phd, {} ms, {} phd, and {} unknown matches'.format(
             city,
             degree_count['undergrad'],
+            degree_count['ms/phd'],
             degree_count['ms'],
-            degree_count['phd']))
+            degree_count['phd'],
+            degree_count['unknown']))
 
 
 def run():
