@@ -1,5 +1,7 @@
 import argparse
 import configparser
+
+import ipgetter
 from dateutil import parser
 
 import pymongo
@@ -43,8 +45,8 @@ def scrape_indeed(database, indeed_client, job_title, locations):
         'limit': max_indeed_limit,
         'latlong': 1,
         'sort': 'date',
-        'userip': '1.2.3.4',
-        'useragent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2)'
+        'userip': ipgetter.myip(),
+        'useragent': 'Python'
     }
 
     for location in locations:
