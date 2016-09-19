@@ -111,14 +111,19 @@ def analyse(database, job_title):
             else:
                 city_degree_counts[city]['unknown'] += 1
 
+    longest_city_length = len(max(city_degree_counts.keys(), key=len))
     for city, degree_count in city_degree_counts.items():
-        print('{} found {} undergrads, {} ms/phd, {} ms, {} phd, and {} unknown matches'.format(
-            city,
-            degree_count['undergrad'],
-            degree_count['ms/phd'],
-            degree_count['ms'],
-            degree_count['phd'],
-            degree_count['unknown']))
+        output_string =\
+            '{:<' +\
+            str(longest_city_length) +\
+            '} found {:>3} undergrads, {:>3} ms/phd, {:>3} ms, {:>3} phd, and {:>3} unknown matches'
+        print(output_string.format(
+                city,
+                degree_count['undergrad'],
+                degree_count['ms/phd'],
+                degree_count['ms'],
+                degree_count['phd'],
+                degree_count['unknown']))
 
 
 def run():
