@@ -78,22 +78,15 @@ def scrape_indeed(database, indeed_client, job_title, locations):
             jobs = indeed_client.search(**indeed_params, l=location, start=result_start)['results']
 
 
-def run():
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    arg_parser = argparse.ArgumentParser()
-    indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
-    database = MongoClient(config['DATABASE']['Host'], int(config['DATABASE']['Port']))[config['DATABASE']['Name']]
-
-    arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
-    arg_parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
-    args = arg_parser.parse_args()
-
-    scrape_indeed(database, indeed_client, args.JobTitle, args.Locations)
-
-    # Count the degree types found
+def analyse(database, job_title):
+    """
+    Analyse job data from database and print results
+    :param database: Database with the job data
+    :param job_title: Job title to analyse
+    :return:
+    """
     city_degree_counts = {}
-    for job in database.jobs.find({'search_title': args.JobTitle}):
+    for job in database.jobs.find({'search_title': job_title}):
         for city in job['search_location']:
             if city not in city_degree_counts:
                 city_degree_counts[city] = {
@@ -106,10 +99,25 @@ def run():
 
     for city, degree_count in city_degree_counts.items():
         print('{} found {} undergrads, {} ms, and {} phd matches'.format(
-           city,
-           degree_count['undergrad'],
-           degree_count['ms'],
-           degree_count['phd']))
+            city,
+            degree_count['undergrad'],
+            degree_count['ms'],
+            degree_count['phd']))
+
+
+def run():
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    arg_parser = argparse.ArgumentParser()
+    indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
+    database = MongoClient(config['DATABASE']['Host'], int(config['DATABASE']['Port']))[config['DATABASE']['Name']]
+
+    arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
+    arg_parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
+    args = arg_parser.parse_args()
+
+    scrape_indeed(database, indeed_client, args.JobTitle, args.Locations)
+    analyse(database, args.JobTitle)
 
 
 if __name__ == '__main__':
