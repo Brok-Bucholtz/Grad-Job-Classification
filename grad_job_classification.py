@@ -4,13 +4,10 @@ import csv
 from os import path, makedirs
 
 import ipgetter
-from dateutil import parser
-
-import pymongo
 import requests
-
+from dateutil import parser
 from indeed import IndeedClient
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
 
 from feature_extraction import job_degree_strings
 
@@ -88,7 +85,7 @@ def scrape_indeed(database, indeed_client, job_title, locations):
     for location in locations:
         result_start = 0
         newest_job = database.jobs.find_one({'search_title': job_title, 'search_location': location},
-                                            sort=[('date', pymongo.DESCENDING)])
+                                            sort=[('date', DESCENDING)])
         indeed_response = indeed_client.search(**indeed_params, l=location, start=result_start)
         jobs = indeed_response['results']
         total_jobs = indeed_response['totalResults']
