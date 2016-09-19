@@ -1,5 +1,7 @@
 import argparse
 import configparser
+import csv
+from os import path, makedirs
 
 import ipgetter
 from dateutil import parser
@@ -28,6 +30,40 @@ def _update_array_fields(model, current_values, new_field_values):
 
     if update_array_fields:
         model.update_one({'_id': current_values['_id']}, {'$push': update_array_fields})
+
+
+def _scrape_cities():
+    """
+    Get list of cities in the United States with a population of at least 15,000
+    :return: Cities
+    """
+    cities = []
+    cities_file_path = './submodule/world-cities/data/world-cities.csv'
+    cache_folder_path = './cache/'
+    cities_cache_filename = 'world-cities.csv'
+
+    if not path.exists(cache_folder_path):
+        makedirs(cache_folder_path)
+    if not path.exists(cache_folder_path + cities_cache_filename):
+        # Read raw city data
+        with open(cities_file_path) as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[1] == 'United States':
+                    cities.append(row[0] + ', ' + row[2])
+
+        # Cache formatted data
+        with open(cache_folder_path + cities_cache_filename, 'w+') as file:
+            writer = csv.writer(file)
+            for city in cities:
+                writer.writerow([city])
+    else:
+        # Read from cache
+        with open(cache_folder_path + cities_cache_filename) as file:
+            reader = csv.reader(file)
+            cities = [row[0] for row in reader]
+
+    return cities
 
 
 def scrape_indeed(database, indeed_client, job_title, locations):
@@ -136,16 +172,14 @@ def run():
 
     arg_parser.add_argument('TaskType', help='Run the specified task type', choices=['analyse', 'scrape'], type=str)
     arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
-    arg_parser.add_argument('--locations', help='Location(s) to search', nargs='+', type=str)
     args = arg_parser.parse_args()
 
     if args.TaskType == 'analyse':
         analyse(database, args.JobTitle)
     elif args.TaskType == 'scrape':
-        if not args.locations:
-            arg_parser.error('TaskType "scrape" requires --locations')
         indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
-        scrape_indeed(database, indeed_client, args.JobTitle, args.locations)
+        cities = _scrape_cities()
+        scrape_indeed(database, indeed_client, args.JobTitle, cities)
 
 
 if __name__ == '__main__':
