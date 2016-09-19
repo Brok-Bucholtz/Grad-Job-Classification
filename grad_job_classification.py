@@ -109,15 +109,20 @@ def run():
     config = configparser.ConfigParser()
     config.read('config.ini')
     arg_parser = argparse.ArgumentParser()
-    indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
     database = MongoClient(config['DATABASE']['Host'], int(config['DATABASE']['Port']))[config['DATABASE']['Name']]
 
+    arg_parser.add_argument('TaskType', help='Run the specified task type', choices=['analyse', 'scrape'], type=str)
     arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
-    arg_parser.add_argument('Locations', help='Location(s) to search', nargs='+', type=str)
+    arg_parser.add_argument('--locations', help='Location(s) to search', nargs='+', type=str)
     args = arg_parser.parse_args()
 
-    scrape_indeed(database, indeed_client, args.JobTitle, args.Locations)
-    analyse(database, args.JobTitle)
+    if args.TaskType == 'analyse':
+        analyse(database, args.JobTitle)
+    elif args.TaskType == 'scrape':
+        if not args.locations:
+            arg_parser.error('TaskType "scrape" requires --locations')
+        indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
+        scrape_indeed(database, indeed_client, args.JobTitle, args.locations)
 
 
 if __name__ == '__main__':
