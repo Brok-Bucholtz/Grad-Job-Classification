@@ -3,9 +3,12 @@ import configparser
 import csv
 import logging
 from os import path, makedirs
+from math import sqrt, ceil, floor
+from bson.son import SON
 
 import ipgetter
 import requests
+import matplotlib.pyplot as plt
 from dateutil import parser
 from indeed import IndeedClient
 from pymongo import MongoClient, DESCENDING
@@ -120,50 +123,57 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
 
 def analyse(database, job_title):
     """
-    Analyse job data from database and print results
+    Analyse job data from database and show results
     :param database: Database with the job data
     :param job_title: Job title to analyse
     :return:
     """
-    city_degree_counts = {}
-    for job in database.jobs.find({'search_title': job_title}):
-        for city in job['search_location']:
-            if city not in city_degree_counts:
-                city_degree_counts[city] = {
-                    'unknown': 0,
-                    'undergrad': 0,
-                    'ms/phd': 0,
-                    'ms': 0,
-                    'phd': 0}
+    top_count = 9
+    fig = plt.figure()
+    most_jobs_pipeline = [
+        {'$unwind': '$search_location'},
+        {'$group': {'_id': '$search_location', 'count': {'$sum': 1}}},
+        {'$sort': SON([('count', -1), ('_id', -1)])}]
+    locations_with_most_jobs = [row['_id'] for row in database.jobs.aggregate(most_jobs_pipeline)][:top_count]
+
+    for location_i, location in enumerate(locations_with_most_jobs):
+        location_degree_counts = {
+            'unknown': 0,
+            'undergrad': 0,
+            'ms/phd': 0,
+            'ms': 0,
+            'phd': 0}
+        for job in database.jobs.find({'search_title': job_title, 'search_location': location}):
             degree_strings = job_degree_strings(job['html_posting'])
             is_grad = degree_strings['ms'] or degree_strings['phd']
             is_undergrad = degree_strings['undergrad'] and not is_grad
 
             if is_undergrad:
-                city_degree_counts[city]['undergrad'] += 1
+                location_degree_counts['undergrad'] += 1
             elif is_grad:
                 if degree_strings['ms'] and degree_strings['phd']:
-                    city_degree_counts[city]['ms/phd'] += 1
+                    location_degree_counts['ms/phd'] += 1
                 elif degree_strings['ms']:
-                    city_degree_counts[city]['ms'] += 1
+                    location_degree_counts['ms'] += 1
                 else:
-                    city_degree_counts[city]['phd'] += 1
+                    location_degree_counts['phd'] += 1
             else:
-                city_degree_counts[city]['unknown'] += 1
+                location_degree_counts['unknown'] += 1
 
-    longest_city_length = len(max(city_degree_counts.keys(), key=len))
-    for city, degree_count in city_degree_counts.items():
-        output_string =\
-            '{:<' +\
-            str(longest_city_length) +\
-            '} found {:>3} undergrads, {:>3} ms/phd, {:>3} ms, {:>3} phd, and {:>3} unknown matches'
-        print(output_string.format(
-                city,
-                degree_count['undergrad'],
-                degree_count['ms/phd'],
-                degree_count['ms'],
-                degree_count['phd'],
-                degree_count['unknown']))
+        # Create pie chart
+        total = sum([count for degree, count in location_degree_counts.items()])
+        labels = []
+        sizes = []
+        colors = ['lightgreen', 'gold', 'coral', 'royalblue', 'sienna']
+
+        for degree, count in location_degree_counts.items():
+            labels.append(degree)
+            sizes.append(count/total)
+
+        location_plt = fig.add_subplot(floor(sqrt(top_count)), ceil(sqrt(top_count)), location_i+1)
+        location_plt.set_title('{} - {}'.format(location, total))
+        location_plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=90)
+    plt.show()
 
 
 def run():
