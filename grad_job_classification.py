@@ -129,9 +129,9 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
             logger.error('Updating db for search_location {} scrape data failed: {}'.format(location, error))
 
 
-def analyse(database, job_title):
+def plot_degree_count_piechart(database, job_title):
     """
-    Analyse job data from database and show results
+    Plot pie charts showing the number of degrees per top locations
     :param database: Database with the job data
     :param job_title: Job title to analyse
     :return:
@@ -212,7 +212,7 @@ def run():
 
     if args.TaskType == 'analyse':
         logger.info('Analysing job data...')
-        analyse(database, args.JobTitle)
+        plot_degree_count_piechart(database, args.JobTitle)
     elif args.TaskType == 'scrape':
         locations = []
         if args.locations:
