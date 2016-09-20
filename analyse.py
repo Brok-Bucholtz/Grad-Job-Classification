@@ -29,21 +29,30 @@ def plot_degree_count_piechart(database, job_title):
             'ms': 0,
             'phd': 0}
         for job in database.jobs.find({'search_title': job_title, 'search_location': location}):
-            degree_strings = job_degree_strings(job['html_posting'])
-            is_grad = degree_strings['ms'] or degree_strings['phd']
-            is_undergrad = degree_strings['undergrad'] and not is_grad
+            if 'degree_classification' not in job:
+                degree_strings = job_degree_strings(job['html_posting'])
+                is_grad = degree_strings['ms'] or degree_strings['phd']
+                is_undergrad = degree_strings['undergrad'] and not is_grad
 
-            if is_undergrad:
-                location_degree_counts['undergrad'] += 1
-            elif is_grad:
-                if degree_strings['ms'] and degree_strings['phd']:
-                    location_degree_counts['ms/phd'] += 1
-                elif degree_strings['ms']:
-                    location_degree_counts['ms'] += 1
+                if is_undergrad:
+                    degree_classification = 'undergrad'
+                elif is_grad:
+                    if degree_strings['ms'] and degree_strings['phd']:
+                        degree_classification = 'ms/phd'
+                    elif degree_strings['ms']:
+                        degree_classification = 'ms'
+                    else:
+                        degree_classification = 'phd'
                 else:
-                    location_degree_counts['phd'] += 1
+                    degree_classification = 'unknown'
+
+                database.jobs.update_one(
+                    {'_id': job['_id']},
+                    {'$set': {'degree_classification': degree_classification}})
             else:
-                location_degree_counts['unknown'] += 1
+                degree_classification = job['degree_classification']
+
+            location_degree_counts[degree_classification] += 1
 
         # Create pie chart
         total = sum([count for degree, count in location_degree_counts.items()])
