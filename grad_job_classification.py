@@ -185,6 +185,7 @@ def run():
 
     arg_parser.add_argument('TaskType', help='Run the specified task type', choices=['analyse', 'scrape'], type=str)
     arg_parser.add_argument('JobTitle', help='Search for specific job title', type=str)
+    arg_parser.add_argument('--locations', help='Specify the locations to use', nargs='+', type=str)
     arg_parser.add_argument('--verbose', help='Verbose Mode', action='store_true')
     args = arg_parser.parse_args()
 
@@ -205,10 +206,15 @@ def run():
         logger.info('Analysing job data...')
         analyse(database, args.JobTitle)
     elif args.TaskType == 'scrape':
+        locations = []
+        if args.locations:
+            locations = args.locations
+        else:
+            locations = _scrape_cities()
+
         logger.info('Scraping indeed...')
         indeed_client = IndeedClient(publisher=config['INDEED']['PublisherNumber'])
-        cities = _scrape_cities()
-        scrape_indeed(database, indeed_client, logger, args.JobTitle, cities)
+        scrape_indeed(database, indeed_client, logger, args.JobTitle, locations)
 
 
 if __name__ == '__main__':
