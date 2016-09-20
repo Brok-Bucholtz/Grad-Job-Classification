@@ -89,6 +89,9 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
     }
 
     for location in locations:
+        # Using a dicts instead of a list will prevent from adding duplicates
+        new_jobs = {}
+        update_jobs = {}
         result_start = 0
         newest_job = database.jobs.find_one({'search_title': job_title, 'search_location': location},
                                             sort=[('date', DESCENDING)])
@@ -98,27 +101,32 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
 
         while result_start < total_jobs and\
                 (not newest_job or newest_job['date'] < parser.parse(jobs[0]['date']).timestamp()):
-            new_jobs = []
             for job in jobs:
                 found_job = database.jobs.find_one({'jobkey': job['jobkey']})
                 if found_job:
-                    _update_array_fields(
-                        database.jobs,
-                        found_job,
-                        {'search_location': location, 'search_title': job_title})
+                    update_jobs[found_job['jobkey']] = found_job
                 else:
                     job['search_location'] = [location]
                     job['search_title'] = [job_title]
                     job['html_posting'] = requests.get(job['url']).content
                     job['date'] = parser.parse(job['date']).timestamp()
-                    new_jobs.append(job)
-            if new_jobs:
-                debug_log_string = 'Scraped location {:<' + str(sample_max_city_name_length) + '} found {:>3} jobs.'
-                logger.debug(debug_log_string.format(location, len(new_jobs)))
-                database.jobs.insert_many(new_jobs)
+                    new_jobs[job['jobkey']] = job
 
             result_start += indeed_params['limit']
             jobs = indeed_client.search(**indeed_params, l=location, start=result_start)['results']
+
+        try:
+            if new_jobs:
+                debug_log_string = 'Scraped location {:<' + str(sample_max_city_name_length) + '} found {:>3} jobs.'
+                logger.debug(debug_log_string.format(location, len(new_jobs)))
+                database.jobs.insert_many(new_jobs.values())
+            for update_job in update_jobs:
+                _update_array_fields(
+                    database.jobs,
+                    update_job,
+                    {'search_location': location, 'search_title': job_title})
+        except Exception as error:
+            logger.error('Updating db for search_location {} scrape data failed: {}'.format(location, error))
 
 
 def analyse(database, job_title):
