@@ -2,6 +2,7 @@ from math import floor, ceil, sqrt
 
 from bson import SON
 import matplotlib.pyplot as plt
+import plotly.plotly as py
 
 from feature_extraction import degree_classification
 
@@ -45,3 +46,56 @@ def plot_degree_count_piechart(database, job_title):
         location_plt.set_title('{} - {}'.format(location, total))
         location_plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=90)
     plt.show()
+
+
+def plot_degree_map(database, job_title):
+    """
+    Plot the degrees on a map of the United States
+    :param database: Database with the information of job degrees
+    :param job_title: The job to use
+    :return:
+    """
+    degrees = {}
+    colors = {
+        'unknown': 'lightgreen',
+        'ms/phd': 'gold',
+        'phd': 'coral',
+        'ms': 'royalblue',
+        'undergrad': 'sienna'}
+    plot_data = []
+    layout = {
+        'title': 'Job Degree Requierments',
+        'showlegend': True,
+        'geo': {
+            'scope': 'usa',
+            'projection': {'type': 'albers usa'},
+            'showland': True,
+            'showlakes': True,
+            'landcolor': 'rgb(212, 212, 212)',
+            'subunitcolor': 'rgb(255, 255, 255)',
+            'countrycolor': 'rgb(255, 255, 255)',
+            'lakecolor': 'rgb(255, 255, 255)'}}
+
+    for job in database.jobs.find({'search_title': job_title}):
+        degree_class = degree_classification(database, job)
+        if degree_class not in degrees:
+            degrees[degree_class] = {
+                'longitude': [],
+                'latitude': [],
+                'jobtitle': []}
+        degrees[degree_class]['longitude'].append(job['longitude'])
+        degrees[degree_class]['latitude'].append(job['latitude'])
+        degrees[degree_class]['jobtitle'].append(job['jobtitle'])
+
+    for degree, data in degrees.items():
+        plot_data.append({
+            'name': degree,
+            'type': 'scattergeo',
+            'locationmode': 'USA-states',
+            'lon': data['longitude'],
+            'lat': data['latitude'],
+            'text': data['jobtitle'],
+            'marker': {'color': colors[degree]}})
+
+    fig = {'data': plot_data, 'layout': layout}
+    py.plot(fig, filename='job-degree-requirements')

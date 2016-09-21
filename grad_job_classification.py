@@ -10,7 +10,7 @@ from dateutil import parser
 from indeed import IndeedClient
 from pymongo import MongoClient, DESCENDING
 
-from analyse import plot_degree_count_piechart
+from analyse import plot_degree_count_piechart, plot_degree_map
 
 
 def _update_array_fields(model, current_values, new_field_values):
@@ -155,6 +155,7 @@ def run():
     if args.TaskType == 'analyse':
         logger.info('Analysing job data...')
         plot_degree_count_piechart(database, args.JobTitle)
+        plot_degree_map(database, args.JobTitle)
     elif args.TaskType == 'scrape':
         locations = []
         if args.locations:
