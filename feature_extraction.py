@@ -26,7 +26,7 @@ def _job_degree_strings(html):
         degree_strings['phd'].append(element)
     for element in soup(text=re.compile(r'\b[m]\.?[s]\.?\b', flags=re.IGNORECASE)):
         degree_strings['ms'].append(element)
-    for element in soup(text=re.compile(r'\bdegree\b', flags=re.IGNORECASE)):
+    for element in soup(text=re.compile(r'\b(degree|bachelors|[b]\.?[s])\b', flags=re.IGNORECASE)): # Bachelors
         degree_strings['undergrad'].append(element)
 
     return degree_strings
