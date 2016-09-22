@@ -1,8 +1,8 @@
-beautifulsoup4
-indeed
-ipgetter
-matplotlib
-plotly
-pymongo
-python-dateutil
-requests
+beautifulsoup4==4.5.1
+indeed==0.0.4
+ipgetter==0.6
+matplotlib==1.5.3
+plotly==1.12.9
+pymongo==3.3.0
+python-dateutil==2.5.3
+requests==2.11.1
