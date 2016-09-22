@@ -1,10 +1,22 @@
-from math import floor, ceil, sqrt
+from math import floor, ceil, sqrt, hypot
 
 from bson import SON
 import matplotlib.pyplot as plt
 import plotly.plotly as py
 
 from feature_extraction import degree_classification, is_machine_learning_title
+
+
+def _find_closest_city(cities, coord, max_distance=1):
+    closest_city = None
+    closest_distance = None
+    for city, city_coord in cities.items():
+        distance = hypot(city_coord[0] - coord[0], city_coord[1] - coord[1])
+        if distance < max_distance and (not closest_distance or distance < closest_distance):
+            closest_city = city
+            closest_distance = distance
+
+    return closest_city
 
 
 def plot_degree_count_piechart(database, job_title):
@@ -104,3 +116,68 @@ def plot_degree_map(database, job_title):
 
     fig = {'data': plot_data, 'layout': layout}
     py.plot(fig, filename='job-degree-requirements')
+
+
+def plot_city_for_degree_requierments(database, job_title, city_coords):
+    """
+    Plot the number of degree requirements for cities
+    :param database: Database with the information of job degrees
+    :param job_title: The Job to usse
+    :return:
+    """
+    degree_counts = {}
+    city_degrees = {}
+    plot_data = []
+    layout = {
+        'title': 'Job Degree Requierments',
+        'showlegend': True,
+        'geo': {
+            'scope': 'usa',
+            'projection': {'type': 'albers usa'},
+            'showland': True,
+            'showlakes': True,
+            'landcolor': 'rgb(212, 212, 212)',
+            'subunitcolor': 'rgb(255, 255, 255)',
+            'countrycolor': 'rgb(255, 255, 255)',
+            'lakecolor': 'rgb(255, 255, 255)'}}
+
+    for job in database.jobs.find({'search_title': job_title}):
+        # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
+        if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
+            closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
+            if closest_city:
+                degree_class = degree_classification(database, job)
+                if degree_class not in city_degrees:
+                    city_degrees[degree_class] = []
+                if closest_city not in degree_counts:
+                    degree_counts[closest_city] = {
+                        'unknown': 0,
+                        'undergrad': 0,
+                        'ms/phd': 0,
+                        'ms': 0,
+                        'phd': 0}
+                degree_counts[closest_city][degree_classification(database, job)] += 1
+                city_degrees[degree_class].append(closest_city)
+
+    for degree, cities in city_degrees.items():
+        latitudes = []
+        longitudes = []
+        sizes = []
+        for city in cities:
+            latitudes.append(city_coords[city][0])
+            longitudes.append(city_coords[city][1])
+            sizes.append(degree_counts[city][degree])
+
+        plot_data.append({
+            'name': degree,
+            'type': 'scattergeo',
+            'locationmode': 'USA-states',
+            'lat': latitudes,
+            'lon': longitudes,
+            'text': sizes,
+            'marker': {
+                'size': sizes,
+                'sizemode': 'area'}})
+
+    fig = {'data': plot_data, 'layout': layout}
+    py.plot(fig, filename='city-job-degree-requirements')

@@ -10,7 +10,7 @@ from dateutil import parser
 from indeed import IndeedClient
 from pymongo import MongoClient, DESCENDING
 
-from analyse import plot_degree_count_piechart, plot_degree_map
+from analyse import plot_degree_count_piechart, plot_degree_map, plot_city_for_degree_requierments
 
 
 def _update_array_fields(model, current_values, new_field_values):
@@ -153,9 +153,29 @@ def run():
         logger.setLevel(logging.INFO)
 
     if args.TaskType == 'analyse':
+        major_city_coords = {
+            'seattle, washington': (47.6062, -122.3321),
+            'The Bay Area': (37.8272, -122.2913),
+            'Los Angeles, California': (34.0522, -118.2437),
+            'Salt Lake City, Utah': (40.7608, -111.8910),
+            'Denver, Colorado': (39.7392, -104.9903),
+            'Dallas, Texas': (32.7767, -96.7970),
+            'Austin, Texas': (30.2672, -97.7431),
+            'Houston, Texas': (29.7604, -95.3698),
+            'Minneapolis, Minnesota': (44.9778, -93.2650),
+            'Chicago, Illinois': (41.8781, -87.6298),
+            'Atlanta, Georgia': (33.7490, -84.3880),
+            'Detroit, Michigan': (42.3314, -83.0458),
+            'Durham, North Carolina': (35.9940, -78.8986),
+            'Miami, Florida': (25.7617, -80.1918),
+            'Washington, District of Columbia': (38.9072, -77.0369),
+            'Philadelphia, Pennsylvania': (39.9526, -75.1652),
+            'Boston, Massachusetts': (42.3601, -71.0589)}
+
         logger.info('Analysing job data...')
         plot_degree_count_piechart(database, args.JobTitle)
         plot_degree_map(database, args.JobTitle)
+        plot_city_for_degree_requierments(database, args.JobTitle, major_city_coords)
     elif args.TaskType == 'scrape':
         locations = []
         if args.locations:
