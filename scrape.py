@@ -137,5 +137,8 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
         except Exception as error:
             logger.error('Updating db for search_location {} scrape data failed: {}'.format(location, error))
 
-    for job in database.jobs.find({'finished_processing': False}):
+    unprocessed_jobs = database.jobs.find({'finished_processing': False})
+    total_jobs = unprocessed_jobs.count()
+    for job_i, job in enumerate(unprocessed_jobs):
+        logger.debug('Processing job {:>3}/{:<3}'.format(job_i+1, total_jobs))
         _finish_processing(database, job)
