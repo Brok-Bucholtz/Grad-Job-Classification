@@ -63,3 +63,13 @@ def degree_classification(database, job):
         degree_class = job['degree_classification']
 
     return degree_class
+
+
+def is_machine_learning_title(title):
+    """
+    A quick and easy solution to filter out jobs with titles that don't have anything to do with machine learning.
+    This will need to be replace with a prediction model in order to apply to all job types
+    :param title: Title of the job
+    :return: True if the title is for machine learning job, False otherwise
+    """
+    return bool(re.search(r'(data|machine\Wlearn|computer scientist)', title, flags=re.IGNORECASE))

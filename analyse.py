@@ -4,7 +4,7 @@ from bson import SON
 import matplotlib.pyplot as plt
 import plotly.plotly as py
 
-from feature_extraction import degree_classification
+from feature_extraction import degree_classification, is_machine_learning_title
 
 
 def plot_degree_count_piechart(database, job_title):
@@ -30,7 +30,9 @@ def plot_degree_count_piechart(database, job_title):
             'ms': 0,
             'phd': 0}
         for job in database.jobs.find({'search_title': job_title, 'search_location': location}):
-            location_degree_counts[degree_classification(database, job)] += 1
+            # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
+            if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
+                location_degree_counts[degree_classification(database, job)] += 1
 
         # Create pie chart
         total = sum([count for degree, count in location_degree_counts.items()])
@@ -77,15 +79,18 @@ def plot_degree_map(database, job_title):
             'lakecolor': 'rgb(255, 255, 255)'}}
 
     for job in database.jobs.find({'search_title': job_title}):
-        degree_class = degree_classification(database, job)
-        if degree_class not in degrees:
-            degrees[degree_class] = {
-                'longitude': [],
-                'latitude': [],
-                'jobtitle': []}
-        degrees[degree_class]['longitude'].append(job['longitude'])
-        degrees[degree_class]['latitude'].append(job['latitude'])
-        degrees[degree_class]['jobtitle'].append(job['jobtitle'])
+        # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
+        if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
+            degree_class = degree_classification(database, job)
+
+            if degree_class not in degrees:
+                degrees[degree_class] = {
+                    'longitude': [],
+                    'latitude': [],
+                    'jobtitle': []}
+            degrees[degree_class]['longitude'].append(job['longitude'])
+            degrees[degree_class]['latitude'].append(job['latitude'])
+            degrees[degree_class]['jobtitle'].append(job['jobtitle'])
 
     for degree, data in degrees.items():
         plot_data.append({
