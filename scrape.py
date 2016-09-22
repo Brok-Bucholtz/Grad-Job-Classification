@@ -6,6 +6,8 @@ import requests
 from dateutil import parser
 from pymongo import DESCENDING
 
+from feature_extraction import degree_classification
+
 
 def _update_array_fields(model, current_values, new_field_values):
     """
@@ -120,8 +122,10 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
             logger.error('Updating db for search_location {} scrape data failed: {}'.format(location, error))
 
     for job in database.jobs.find({'finished_processing': False}):
+        html_posting = requests.get(job['url']).content
         database.jobs.update_one(
             {'_id': job['_id']},
             {'$set': {
-                'html_posting': requests.get(job['url']).content,
+                'html_posting': html_posting,
+                'degree_classification': degree_classification(html_posting),
                 'finished_processing': True}})

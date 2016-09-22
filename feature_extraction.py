@@ -32,35 +32,27 @@ def _job_degree_strings(html):
     return degree_strings
 
 
-def degree_classification(database, job):
+def degree_classification(html_posting):
     """
-    Get the degree classification for a job from cache, otherwise cache it
-    :param database: Database to update job
-    :param job: Job to get degree classifivation for
+    Get the degree classification from a job posting
+    :param html_posting: Html of job posting
     :return: Degree classification
     """
-    if 'degree_classification' not in job:
-        degree_strings = _job_degree_strings(job['html_posting'])
-        is_grad = degree_strings['ms'] or degree_strings['phd']
-        is_undergrad = degree_strings['undergrad'] and not is_grad
+    degree_strings = _job_degree_strings(html_posting)
+    is_grad = degree_strings['ms'] or degree_strings['phd']
+    is_undergrad = degree_strings['undergrad'] and not is_grad
 
-        if is_undergrad:
-            degree_class = 'undergrad'
-        elif is_grad:
-            if degree_strings['ms'] and degree_strings['phd']:
-                degree_class = 'ms/phd'
-            elif degree_strings['ms']:
-                degree_class = 'ms'
-            else:
-                degree_class = 'phd'
+    if is_undergrad:
+        degree_class = 'undergrad'
+    elif is_grad:
+        if degree_strings['ms'] and degree_strings['phd']:
+            degree_class = 'ms/phd'
+        elif degree_strings['ms']:
+            degree_class = 'ms'
         else:
-            degree_class = 'unknown'
-
-        database.jobs.update_one(
-            {'_id': job['_id']},
-            {'$set': {'degree_classification': degree_class}})
+            degree_class = 'phd'
     else:
-        degree_class = job['degree_classification']
+        degree_class = 'unknown'
 
     return degree_class
 

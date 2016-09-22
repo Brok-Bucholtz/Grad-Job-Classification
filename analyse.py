@@ -3,7 +3,7 @@ from math import floor, ceil, sqrt, hypot
 import matplotlib.pyplot as plt
 import plotly.plotly as py
 
-from feature_extraction import degree_classification, is_machine_learning_title
+from feature_extraction import is_machine_learning_title
 
 
 def _find_closest_city(cities, coord, max_distance=1):
@@ -39,7 +39,7 @@ def plot_degree_count_city_piechart(database, job_title, city_coords):
                         'ms/phd': 0,
                         'ms': 0,
                         'phd': 0}
-                city_degree_counts[closest_city][degree_classification(database, job)] += 1
+                city_degree_counts[closest_city][job['degree_classification']] += 1
 
     # Create pie charts
     colors = ['lightgreen', 'gold', 'coral', 'royalblue', 'sienna']
@@ -88,7 +88,7 @@ def plot_degree_map(database, job_title):
     for job in database.jobs.find({'search_title': job_title, 'finished_processing': True}):
         # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
         if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
-            degree_class = degree_classification(database, job)
+            degree_class = job['degree_classification']
 
             if degree_class not in degrees:
                 degrees[degree_class] = {
@@ -141,7 +141,7 @@ def plot_city_for_degree_requierments(database, job_title, city_coords):
         if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
             closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
             if closest_city:
-                degree_class = degree_classification(database, job)
+                degree_class = job['degree_classification']
                 if degree_class not in city_degrees:
                     city_degrees[degree_class] = []
                 if closest_city not in degree_counts:
@@ -151,7 +151,7 @@ def plot_city_for_degree_requierments(database, job_title, city_coords):
                         'ms/phd': 0,
                         'ms': 0,
                         'phd': 0}
-                degree_counts[closest_city][degree_classification(database, job)] += 1
+                degree_counts[closest_city][job['degree_classification']] += 1
                 city_degrees[degree_class].append(closest_city)
 
     for degree, cities in city_degrees.items():
