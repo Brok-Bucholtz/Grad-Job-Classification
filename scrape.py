@@ -26,6 +26,22 @@ def _update_array_fields(model, current_values, new_field_values):
         model.update_one({'_id': current_values['_id']}, {'$push': update_array_fields})
 
 
+def _finish_processing(database, job):
+    """
+    Finish processing scraped jobs
+    :param database: Database to update the job
+    :param job: Job to continue processing
+    :return:
+    """
+    html_posting = requests.get(job['url']).content
+    database.jobs.update_one(
+        {'_id': job['_id']},
+        {'$set': {
+            'html_posting': html_posting,
+            'degree_classification': degree_classification(html_posting),
+            'finished_processing': True}})
+
+
 def scrape_cities():
     """
     Get list of cities in the United States with a population of at least 15,000
@@ -122,10 +138,4 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
             logger.error('Updating db for search_location {} scrape data failed: {}'.format(location, error))
 
     for job in database.jobs.find({'finished_processing': False}):
-        html_posting = requests.get(job['url']).content
-        database.jobs.update_one(
-            {'_id': job['_id']},
-            {'$set': {
-                'html_posting': html_posting,
-                'degree_classification': degree_classification(html_posting),
-                'finished_processing': True}})
+        _finish_processing(database, job)
