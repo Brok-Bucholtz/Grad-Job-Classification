@@ -10,7 +10,7 @@ from dateutil import parser
 from indeed import IndeedClient
 from pymongo import MongoClient, DESCENDING
 
-from analyse import plot_degree_count_piechart, plot_degree_map, plot_city_for_degree_requierments
+from analyse import plot_degree_count_city_piechart, plot_degree_map, plot_city_for_degree_requierments
 
 
 def _update_array_fields(model, current_values, new_field_values):
@@ -173,7 +173,7 @@ def run():
             'Boston, Massachusetts': (42.3601, -71.0589)}
 
         logger.info('Analysing job data...')
-        plot_degree_count_piechart(database, args.JobTitle)
+        plot_degree_count_city_piechart(database, args.JobTitle, major_city_coords)
         plot_degree_map(database, args.JobTitle)
         plot_city_for_degree_requierments(database, args.JobTitle, major_city_coords)
     elif args.TaskType == 'scrape':
