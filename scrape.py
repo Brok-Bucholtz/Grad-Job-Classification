@@ -129,7 +129,7 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
                 debug_log_string = 'Scraped location {:<' + str(sample_max_city_name_length) + '} found {:>3} jobs.'
                 logger.debug(debug_log_string.format(location, len(new_jobs)))
                 database.jobs.insert_many(new_jobs.values())
-            for update_job in update_jobs:
+            for job_key, update_job in update_jobs.items():
                 _update_array_fields(
                     database.jobs,
                     update_job,
