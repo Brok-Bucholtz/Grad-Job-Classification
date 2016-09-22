@@ -27,7 +27,7 @@ def plot_degree_count_city_piechart(database, job_title, city_coords):
     """
     city_degree_counts = {}
     fig = plt.figure()
-    for job in database.jobs.find({'search_title': job_title}):
+    for job in database.jobs.find({'search_title': job_title, 'finished_processing': True}):
         # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
         if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
             closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
@@ -85,7 +85,7 @@ def plot_degree_map(database, job_title):
             'countrycolor': 'rgb(255, 255, 255)',
             'lakecolor': 'rgb(255, 255, 255)'}}
 
-    for job in database.jobs.find({'search_title': job_title}):
+    for job in database.jobs.find({'search_title': job_title, 'finished_processing': True}):
         # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
         if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
             degree_class = degree_classification(database, job)
@@ -136,7 +136,7 @@ def plot_city_for_degree_requierments(database, job_title, city_coords):
             'countrycolor': 'rgb(255, 255, 255)',
             'lakecolor': 'rgb(255, 255, 255)'}}
 
-    for job in database.jobs.find({'search_title': job_title}):
+    for job in database.jobs.find({'search_title': job_title, 'finished_processing': True}):
         # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
         if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
             closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))

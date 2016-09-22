@@ -99,8 +99,8 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
                 else:
                     job['search_location'] = [location]
                     job['search_title'] = [job_title]
-                    job['html_posting'] = requests.get(job['url']).content
                     job['date'] = parser.parse(job['date']).timestamp()
+                    job['finished_processing'] = False
                     new_jobs[job['jobkey']] = job
 
             result_start += indeed_params['limit']
@@ -118,3 +118,10 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
                     {'search_location': location, 'search_title': job_title})
         except Exception as error:
             logger.error('Updating db for search_location {} scrape data failed: {}'.format(location, error))
+
+    for job in database.jobs.find({'finished_processing': False}):
+        database.jobs.update_one(
+            {'_id': job['_id']},
+            {'$set': {
+                'html_posting': requests.get(job['url']).content,
+                'finished_processing': True}})
