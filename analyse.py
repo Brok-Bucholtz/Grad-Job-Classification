@@ -3,8 +3,6 @@ from math import floor, ceil, sqrt, hypot
 import matplotlib.pyplot as plt
 import plotly.plotly as py
 
-from feature_extraction import is_machine_learning_title
-
 
 def _find_closest_city(cities, coord, max_distance=1):
     closest_city = None
@@ -18,28 +16,26 @@ def _find_closest_city(cities, coord, max_distance=1):
     return closest_city
 
 
-def plot_degree_count_city_piechart(database, job_title, city_coords):
+def plot_degree_count_city_piechart(jobs, city_coords):
     """
-    Plot pie charts showing the number of degrees per top locations
-    :param database: Database with the job data
-    :param job_title: Job title to analyse
+    Plot pie charts showing the number of degrees for  cities
+    :param jobs: Jobs with degree requirement information
+    :param city_coords: Dict of city names to their gps coordinates
     :return:
     """
     city_degree_counts = {}
     fig = plt.figure()
-    for job in database.jobs.find({'search_title': job_title, 'finished_processing': True}):
-        # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
-        if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
-            closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
-            if closest_city:
-                if closest_city not in city_degree_counts:
-                    city_degree_counts[closest_city] = {
-                        'unknown': 0,
-                        'undergrad': 0,
-                        'ms/phd': 0,
-                        'ms': 0,
-                        'phd': 0}
-                city_degree_counts[closest_city][job['degree_classification']] += 1
+    for job in jobs:
+        closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
+        if closest_city:
+            if closest_city not in city_degree_counts:
+                city_degree_counts[closest_city] = {
+                    'unknown': 0,
+                    'undergrad': 0,
+                    'ms/phd': 0,
+                    'ms': 0,
+                    'phd': 0}
+            city_degree_counts[closest_city][job['degree_classification']] += 1
 
     # Create pie charts
     colors = ['lightgreen', 'gold', 'coral', 'royalblue', 'sienna']
@@ -57,11 +53,10 @@ def plot_degree_count_city_piechart(database, job_title, city_coords):
     plt.show()
 
 
-def plot_degree_map(database, job_title):
+def plot_degree_map(jobs):
     """
     Plot the degrees on a map of the United States
-    :param database: Database with the information of job degrees
-    :param job_title: The job to use
+    :param jobs: Jobs with degree requirement information
     :return:
     """
     degrees = {}
@@ -85,19 +80,17 @@ def plot_degree_map(database, job_title):
             'countrycolor': 'rgb(255, 255, 255)',
             'lakecolor': 'rgb(255, 255, 255)'}}
 
-    for job in database.jobs.find({'search_title': job_title, 'finished_processing': True}):
-        # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
-        if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
-            degree_class = job['degree_classification']
+    for job in jobs:
+        degree_class = job['degree_classification']
 
-            if degree_class not in degrees:
-                degrees[degree_class] = {
-                    'longitude': [],
-                    'latitude': [],
-                    'jobtitle': []}
-            degrees[degree_class]['longitude'].append(job['longitude'])
-            degrees[degree_class]['latitude'].append(job['latitude'])
-            degrees[degree_class]['jobtitle'].append(job['jobtitle'])
+        if degree_class not in degrees:
+            degrees[degree_class] = {
+                'longitude': [],
+                'latitude': [],
+                'jobtitle': []}
+        degrees[degree_class]['longitude'].append(job['longitude'])
+        degrees[degree_class]['latitude'].append(job['latitude'])
+        degrees[degree_class]['jobtitle'].append(job['jobtitle'])
 
     for degree, data in degrees.items():
         plot_data.append({
@@ -113,11 +106,11 @@ def plot_degree_map(database, job_title):
     py.plot(fig, filename='job-degree-requirements')
 
 
-def plot_city_for_degree_requierments(database, job_title, city_coords):
+def plot_city_for_degree_requierments(jobs, city_coords):
     """
     Plot the number of degree requirements for cities
-    :param database: Database with the information of job degrees
-    :param job_title: The Job to usse
+    :param jobs: Jobs with degree requirement information
+    :param city_coords: Dict of city names to their gps coordinates
     :return:
     """
     degree_counts = {}
@@ -136,23 +129,21 @@ def plot_city_for_degree_requierments(database, job_title, city_coords):
             'countrycolor': 'rgb(255, 255, 255)',
             'lakecolor': 'rgb(255, 255, 255)'}}
 
-    for job in database.jobs.find({'search_title': job_title, 'finished_processing': True}):
-        # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
-        if job_title != 'machine learning' or is_machine_learning_title(job['jobtitle']):
-            closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
-            if closest_city:
-                degree_class = job['degree_classification']
-                if degree_class not in city_degrees:
-                    city_degrees[degree_class] = []
-                if closest_city not in degree_counts:
-                    degree_counts[closest_city] = {
-                        'unknown': 0,
-                        'undergrad': 0,
-                        'ms/phd': 0,
-                        'ms': 0,
-                        'phd': 0}
-                degree_counts[closest_city][job['degree_classification']] += 1
-                city_degrees[degree_class].append(closest_city)
+    for job in jobs:
+        closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
+        if closest_city:
+            degree_class = job['degree_classification']
+            if degree_class not in city_degrees:
+                city_degrees[degree_class] = []
+            if closest_city not in degree_counts:
+                degree_counts[closest_city] = {
+                    'unknown': 0,
+                    'undergrad': 0,
+                    'ms/phd': 0,
+                    'ms': 0,
+                    'phd': 0}
+            degree_counts[closest_city][job['degree_classification']] += 1
+            city_degrees[degree_class].append(closest_city)
 
     for degree, cities in city_degrees.items():
         latitudes = []

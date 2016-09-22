@@ -6,6 +6,7 @@ from indeed import IndeedClient
 from pymongo import MongoClient
 
 from analyse import plot_degree_count_city_piechart, plot_degree_map, plot_city_for_degree_requierments
+from feature_extraction import is_machine_learning_title
 from scrape import scrape_indeed, scrape_cities
 
 
@@ -36,6 +37,7 @@ def run():
         logger.setLevel(logging.INFO)
 
     if args.TaskType == 'analyse':
+        jobs = []
         major_city_coords = {
             'seattle, washington': (47.6062, -122.3321),
             'The Bay Area': (37.8272, -122.2913),
@@ -55,10 +57,15 @@ def run():
             'Philadelphia, Pennsylvania': (39.9526, -75.1652),
             'Boston, Massachusetts': (42.3601, -71.0589)}
 
+        for job in database.jobs.find({'search_title': args.JobTitle, 'finished_processing': True}):
+            # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
+            if args.JobTitle != 'machine learning' or is_machine_learning_title(job['jobtitle']):
+                jobs.append(job)
+
         logger.info('Analysing job data...')
-        plot_degree_count_city_piechart(database, args.JobTitle, major_city_coords)
-        plot_degree_map(database, args.JobTitle)
-        plot_city_for_degree_requierments(database, args.JobTitle, major_city_coords)
+        plot_degree_count_city_piechart(jobs, major_city_coords)
+        plot_degree_map(jobs)
+        plot_city_for_degree_requierments(jobs, major_city_coords)
     elif args.TaskType == 'scrape':
         locations = args.locations if args.locations else scrape_cities()
 
