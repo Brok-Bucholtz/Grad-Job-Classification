@@ -41,26 +41,29 @@ def _equal_domains(size, spacing, max_length=1):
     return domains
 
 
-def plot_degree_count_city_piechart(jobs, city_coords):
+def plot_degree_count_city_piechart(jobs, city_coords, include_others=False):
     """
-    Plot pie charts showing the number of degrees for  cities
+    Plot pie charts showing the number of degrees for cities
     :param jobs: Jobs with degree requirement information
     :param city_coords: Dict of city names to their gps coordinates
+    :param include_others: Boolean to include jobs that aren't near cities as their own category
     :return:
     """
     city_degree_counts = {}
     plt_data = []
     for job in jobs:
         closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
-        if closest_city:
-            if closest_city not in city_degree_counts:
-                city_degree_counts[closest_city] = {
-                    'unknown': 0,
-                    'undergrad': 0,
-                    'ms/phd': 0,
-                    'ms': 0,
-                    'phd': 0}
-            city_degree_counts[closest_city][job['degree_classification']] += 1
+        if include_others and not closest_city:
+            closest_city = 'other'
+
+        if closest_city not in city_degree_counts:
+            city_degree_counts[closest_city] = {
+                'unknown': 0,
+                'undergrad': 0,
+                'ms/phd': 0,
+                'ms': 0,
+                'phd': 0}
+        city_degree_counts[closest_city][job['degree_classification']] += 1
 
     # Create coordinates for pie charts
     if len(city_degree_counts) <= 1:

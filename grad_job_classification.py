@@ -66,7 +66,7 @@ def run():
                 jobs.append(job)
 
         logger.info('Analysing job data...')
-        plot_degree_count_city_piechart(jobs, major_city_coords)
+        plot_degree_count_city_piechart(jobs, major_city_coords, True)
         plot_degree_map(jobs)
         plot_jobs_not_in_city_for_degree_requierments(jobs, major_city_coords)
     elif args.TaskType == 'scrape':
