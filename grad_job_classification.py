@@ -60,7 +60,9 @@ def run():
             'San Diego, California': (32.715736, -117.161087),
             'Sacramento, California': (38.575764, -121.478851)}
 
-        for job in database.jobs.find({'search_title': args.JobTitle, 'finished_processing': True}):
+        for job in database.jobs.find(
+                {'search_title': args.JobTitle, 'finished_processing': True},
+                projection={'jobtitle': True, 'latitude': True, 'longitude': True, 'degree_classification': True}):
             # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
             if args.JobTitle != 'machine learning' or is_machine_learning_title(job['jobtitle']):
                 jobs.append(job)
