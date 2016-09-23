@@ -1,6 +1,5 @@
 from math import floor, ceil, sqrt, hypot
 
-import matplotlib.pyplot as plt
 import plotly.plotly as py
 
 
@@ -16,6 +15,25 @@ def _find_closest_city(cities, coord, max_distance=1):
     return closest_city
 
 
+def _equal_domains(size, spacing, max_length=1):
+    """
+    Create a list of <size> equal domains of with <spacing> amount in between
+    :param size: Number of domains
+    :param spacing: Spacing between domains
+    :param max_length: Max length of all domains combined
+    :return: Equal domains list
+    """
+    domains = []
+    length = (max_length - (spacing * (size - 1))) / size
+    
+    for x_i in range(size):
+        first = x_i * length + x_i * spacing
+        second = (x_i + 1) * length + x_i * spacing
+        domains.append([first, second])
+        
+    return domains
+
+
 def plot_degree_count_city_piechart(jobs, city_coords):
     """
     Plot pie charts showing the number of degrees for  cities
@@ -24,7 +42,7 @@ def plot_degree_count_city_piechart(jobs, city_coords):
     :return:
     """
     city_degree_counts = {}
-    fig = plt.figure()
+    plt_data = []
     for job in jobs:
         closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
         if closest_city:
@@ -37,8 +55,13 @@ def plot_degree_count_city_piechart(jobs, city_coords):
                     'phd': 0}
             city_degree_counts[closest_city][job['degree_classification']] += 1
 
+    # Create coordinates for pie charts
+    if len(city_degree_counts) <= 1:
+        domains = [[0.3, 0.6]]
+    else:
+        domains = _equal_domains(ceil(sqrt(len(city_degree_counts))), 0.01)
+
     # Create pie charts
-    colors = ['lightgreen', 'gold', 'coral', 'royalblue', 'sienna']
     for city_i, (city, degree_counts) in enumerate(city_degree_counts.items()):
         labels = []
         sizes = []
@@ -47,10 +70,15 @@ def plot_degree_count_city_piechart(jobs, city_coords):
             labels.append(degree)
             sizes.append(degree_count/total)
 
-        location_plt = fig.add_subplot(floor(sqrt(len(city_degree_counts))), ceil(sqrt(len(city_degree_counts))), city_i+1)
-        location_plt.set_title('{} - {}'.format(city, total))
-        location_plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=90)
-    plt.show()
+        plt_data.append({
+            'values': sizes,
+            'labels': labels,
+            'name': '{} - {}'.format(city, total),
+            'hoverinfo': 'label+percent+name',
+            'domain': {'x': domains[city_i % len(domains)], 'y': domains[floor(city_i/len(domains))]},
+            'textinfo': 'none',
+            'type': 'pie'})
+    py.plot({'data': plt_data})
 
 
 def plot_degree_map(jobs):
