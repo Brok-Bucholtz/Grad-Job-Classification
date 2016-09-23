@@ -5,7 +5,7 @@ import logging
 from indeed import IndeedClient
 from pymongo import MongoClient
 
-from analyse import plot_degree_count_city_piechart, plot_degree_map, plot_jobs_not_in_city_for_degree_requierments
+from analyse import plot_degree_count_city_bar_chart, plot_degree_map, plot_jobs_not_in_city_for_degree_requierments
 from feature_extraction import is_machine_learning_title
 from scrape import scrape_indeed, scrape_cities
 
@@ -68,7 +68,7 @@ def run():
                 jobs.append(job)
 
         logger.info('Analysing job data...')
-        plot_degree_count_city_piechart(jobs, major_city_coords, True)
+        plot_degree_count_city_bar_chart(jobs, major_city_coords, True)
         plot_degree_map(jobs)
         plot_jobs_not_in_city_for_degree_requierments(jobs, major_city_coords)
     elif args.TaskType == 'scrape':
