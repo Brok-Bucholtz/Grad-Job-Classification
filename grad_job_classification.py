@@ -2,11 +2,11 @@ import argparse
 import configparser
 import logging
 
+import pandas as pd
 from indeed import IndeedClient
 from pymongo import MongoClient
 
 from analyse import plot_degree_count_city_bar_chart, plot_degree_map, plot_jobs_not_in_city_for_degree_requierments
-from feature_extraction import is_machine_learning_title
 from scrape import scrape_indeed, scrape_cities
 
 
@@ -37,7 +37,6 @@ def run():
         logger.setLevel(logging.INFO)
 
     if args.TaskType == 'analyse':
-        jobs = []
         major_city_coords = {
             'seattle, washington': (47.6062, -122.3321),
             'San Francisco, California ': (37.773972, -122.431297),
@@ -62,12 +61,13 @@ def run():
             'San Diego, California': (32.715736, -117.161087),
             'Sacramento, California': (38.575764, -121.478851)}
 
-        for job in database.jobs.find(
+        jobs = pd.DataFrame(list(database.jobs.find(
                 {'search_title': args.JobTitle, 'finished_processing': True},
-                projection={'jobtitle': True, 'latitude': True, 'longitude': True, 'degree_classification': True}):
-            # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
-            if args.JobTitle != 'machine learning' or is_machine_learning_title(job['jobtitle']):
-                jobs.append(job)
+                projection={'jobtitle': True, 'latitude': True, 'longitude': True, 'degree_classification': True})))
+
+        # ToDo: Use a prediction model that can be applied to all jobs
+        if args.JobTitle == 'machine learning':
+            jobs = jobs[jobs['jobtitle'].str.contains(r'(data|machine\Wlearn|computer scientist)', case=False)]
 
         logger.info('Analysing job data...')
         plot_degree_count_city_bar_chart(jobs, major_city_coords, True)
