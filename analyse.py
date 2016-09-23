@@ -134,15 +134,20 @@ def plot_degree_map(jobs):
     py.plot(fig, filename='job-degree-requirements')
 
 
-def plot_city_for_degree_requierments(jobs, city_coords):
+def plot_jobs_not_in_city_for_degree_requierments(jobs, city_coords):
     """
-    Plot the number of degree requirements for cities
+    Plot jobs that are not near <city_coords>
     :param jobs: Jobs with degree requirement information
     :param city_coords: Dict of city names to their gps coordinates
     :return:
     """
-    degree_counts = {}
-    city_degrees = {}
+    colors = {
+        'unknown': 'lightgreen',
+        'ms/phd': 'gold',
+        'phd': 'coral',
+        'ms': 'royalblue',
+        'undergrad': 'sienna'}
+    degree_jobs = {}
     plot_data = []
     layout = {
         'title': 'Job Degree Requierments',
@@ -158,29 +163,18 @@ def plot_city_for_degree_requierments(jobs, city_coords):
             'lakecolor': 'rgb(255, 255, 255)'}}
 
     for job in jobs:
-        closest_city = _find_closest_city(city_coords, (job['latitude'], job['longitude']))
-        if closest_city:
+        if not _find_closest_city(city_coords, (job['latitude'], job['longitude'])):
             degree_class = job['degree_classification']
-            if degree_class not in city_degrees:
-                city_degrees[degree_class] = []
-            if closest_city not in degree_counts:
-                degree_counts[closest_city] = {
-                    'unknown': 0,
-                    'undergrad': 0,
-                    'ms/phd': 0,
-                    'ms': 0,
-                    'phd': 0}
-            degree_counts[closest_city][job['degree_classification']] += 1
-            city_degrees[degree_class].append(closest_city)
+            if degree_class not in degree_jobs:
+                degree_jobs[degree_class] = []
+            degree_jobs[degree_class].append(job)
 
-    for degree, cities in city_degrees.items():
+    for degree, deg_jobs in degree_jobs.items():
         latitudes = []
         longitudes = []
-        sizes = []
-        for city in cities:
-            latitudes.append(city_coords[city][0])
-            longitudes.append(city_coords[city][1])
-            sizes.append(degree_counts[city][degree])
+        for job in deg_jobs:
+            latitudes.append(job['latitude'])
+            longitudes.append(job['longitude'])
 
         plot_data.append({
             'name': degree,
@@ -188,10 +182,7 @@ def plot_city_for_degree_requierments(jobs, city_coords):
             'locationmode': 'USA-states',
             'lat': latitudes,
             'lon': longitudes,
-            'text': sizes,
-            'marker': {
-                'size': sizes,
-                'sizemode': 'area'}})
+            'marker': {'color': colors[degree]}})
 
     fig = {'data': plot_data, 'layout': layout}
     py.plot(fig, filename='city-job-degree-requirements')
