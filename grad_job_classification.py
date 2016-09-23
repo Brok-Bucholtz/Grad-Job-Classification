@@ -40,7 +40,9 @@ def run():
         jobs = []
         major_city_coords = {
             'seattle, washington': (47.6062, -122.3321),
-            'The Bay Area': (37.8272, -122.2913),
+            'San Francisco, California ': (37.773972, -122.431297),
+            'San Jose, California': (37.279518, -121.867905),
+            'Oakland, California': (37.8043700, -122.2708000),
             'Los Angeles, California': (34.0522, -118.2437),
             'Salt Lake City, Utah': (40.7608, -111.8910),
             'Denver, Colorado': (39.7392, -104.9903),
