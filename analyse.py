@@ -2,6 +2,13 @@ from math import floor, ceil, sqrt, hypot
 
 import plotly.plotly as py
 
+DEGREE_COLORS = {
+    'unknown': 'lightgreen',
+    'ms/phd': 'gold',
+    'phd': 'coral',
+    'ms': 'royalblue',
+    'undergrad': 'sienna'}
+
 
 def _find_closest_city(cities, coord, max_distance=1):
     closest_city = None
@@ -77,6 +84,7 @@ def plot_degree_count_city_piechart(jobs, city_coords):
             'hoverinfo': 'label+percent+name',
             'domain': {'x': domains[city_i % len(domains)], 'y': domains[floor(city_i/len(domains))]},
             'textinfo': 'none',
+            'marker': {'colors': [DEGREE_COLORS[degree] for degree in labels]},
             'type': 'pie'})
     py.plot({'data': plt_data})
 
@@ -88,12 +96,6 @@ def plot_degree_map(jobs):
     :return:
     """
     degrees = {}
-    colors = {
-        'unknown': 'lightgreen',
-        'ms/phd': 'gold',
-        'phd': 'coral',
-        'ms': 'royalblue',
-        'undergrad': 'sienna'}
     plot_data = []
     layout = {
         'title': 'Job Degree Requierments',
@@ -128,7 +130,7 @@ def plot_degree_map(jobs):
             'lon': data['longitude'],
             'lat': data['latitude'],
             'text': data['jobtitle'],
-            'marker': {'color': colors[degree]}})
+            'marker': {'color': DEGREE_COLORS[degree]}})
 
     fig = {'data': plot_data, 'layout': layout}
     py.plot(fig, filename='job-degree-requirements')
@@ -141,12 +143,6 @@ def plot_jobs_not_in_city_for_degree_requierments(jobs, city_coords):
     :param city_coords: Dict of city names to their gps coordinates
     :return:
     """
-    colors = {
-        'unknown': 'lightgreen',
-        'ms/phd': 'gold',
-        'phd': 'coral',
-        'ms': 'royalblue',
-        'undergrad': 'sienna'}
     degree_jobs = {}
     plot_data = []
     layout = {
@@ -182,7 +178,7 @@ def plot_jobs_not_in_city_for_degree_requierments(jobs, city_coords):
             'locationmode': 'USA-states',
             'lat': latitudes,
             'lon': longitudes,
-            'marker': {'color': colors[degree]}})
+            'marker': {'color': DEGREE_COLORS[degree]}})
 
     fig = {'data': plot_data, 'layout': layout}
     py.plot(fig, filename='city-job-degree-requirements')
