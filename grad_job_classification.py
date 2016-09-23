@@ -55,7 +55,10 @@ def run():
             'Miami, Florida': (25.7617, -80.1918),
             'Washington, District of Columbia': (38.9072, -77.0369),
             'Philadelphia, Pennsylvania': (39.9526, -75.1652),
-            'Boston, Massachusetts': (42.3601, -71.0589)}
+            'Boston, Massachusetts': (42.3601, -71.0589),
+            'New York, New York': (40.730610, -73.935242),
+            'San Diego, California': (32.715736, -117.161087),
+            'Sacramento, California': (38.575764, -121.478851)}
 
         for job in database.jobs.find({'search_title': args.JobTitle, 'finished_processing': True}):
             # ToDo: Replace is_machine_learning_title with a prediction model that applys to all jobs
