@@ -58,10 +58,10 @@ def plot_degree_count_city_bar_chart(jobs, city_coords, include_others=False):
     plt_data = []
     for degree in ordered_degrees:
         plt_data.append({
-            'x': degree_city['count'][degree],
-            'y': degree_city['count'][degree].index,
+            'x': degree_city['count'][degree].index,
+            'y': degree_city['count'][degree],
             'name': degree,
-            'orientation': 'h',
+            'orientation': 'v',
             'marker': {'color': DEGREE_COLORS[degree]},
             'type': 'bar'})
     py.plot({'data': plt_data, 'layout': {'barmode': 'stack'}})
