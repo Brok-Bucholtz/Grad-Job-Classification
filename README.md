@@ -1,5 +1,6 @@
 # Grad-Job-Classification
 View the market for University Degrees
+![Diagram](readme/diagram.png)
 ## Install
 ```
 pip3 install -r requirements.txt
