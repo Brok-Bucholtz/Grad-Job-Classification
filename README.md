@@ -1,5 +1,5 @@
-# Grad-Job-Classification
-View the market for University Degrees
+# Graduate Job Classification
+Aggregate [Indeed](http://www.indeed.com) job postings and classify their graduate degree requirements.
 ![Diagram](readme/diagram.png)
 ## Prerequisites
 - Python 3
