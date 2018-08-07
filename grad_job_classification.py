@@ -65,6 +65,9 @@ def run():
                 {'search_title': args.JobTitle, 'finished_processing': True},
                 projection={'jobtitle': True, 'latitude': True, 'longitude': True, 'degree_classification': True})))
 
+        if len(jobs) == 0:
+            raise Exception('No processed jobs in the database. Make sure to run the scrape command completely.')
+
         # ToDo: Use a prediction model that can be applied to all jobs
         if args.JobTitle == 'machine learning':
             jobs = jobs[jobs['jobtitle'].str.contains(r'(data|machine\Wlearn|computer scientist)', case=False)]
