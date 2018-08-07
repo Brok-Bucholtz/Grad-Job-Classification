@@ -105,6 +105,10 @@ def scrape_indeed(database, indeed_client, logger, job_title, locations):
         newest_job = database.jobs.find_one({'search_title': job_title, 'search_location': location},
                                             sort=[('date', DESCENDING)])
         indeed_response = indeed_client.search(**indeed_params, l=location, start=result_start)
+
+        if 'error' in indeed_response:
+            raise Exception('Indeed Error -  {}'.format(indeed_response['error']))
+
         jobs = indeed_response['results']
         total_jobs = indeed_response['totalResults']
 
